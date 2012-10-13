@@ -55,15 +55,12 @@ while (my $token = $p->get_tag("div")) {
     next if !$tweetid;
     my $username = $token->[1]{"data-screen-name"};
     next if !$username;
+    my $fullname = $token->[1]{"data-name"};
+    next if !$fullname;
 #    my $cardtype = $token->[1]{"data-card-type"}; # FIXME: extract img url, not done.
 #    $has_photo = 1 if $cardtype eq "photo";
     
     my $url = "https://twitter.com/$username/status/$tweetid";
-
-    $token = $p->get_tag("strong");
-    $class = $token->[1]{class};
-    next if $class !~ /^fullname/;
-    my $fullname = $p->get_text("/strong");
 
 # find next <a> and <span> tag, with timestamp.
 # <a href="https://twitter.com/awfan/status/252419939175120896" class="tweet-timestamp js-permalink js-nav" title="7:49 AM - 30 Sep 12"><span class="_timestamp js-short-timestamp js-relative-timestamp" data-time="1349016577" data-long-form="true">10m</span></a>
@@ -76,26 +73,19 @@ while (my $token = $p->get_tag("div")) {
     $time /= 1000 if length($time) > 12; # data-time is in miliseconds if 13 digits long.
     my $time_string = strftime "%Y-%m-%d %H:%M:%S UTC", gmtime($time);
 
-    while ($token = $p->get_tag("span")) {
-	$class = $token->[1]{class};
-	if ($class =~ /^username/) {
-	    my $username = $p->get_text("/span");
-	    if ($html_mode) {
-		print "$fullname $username <a href=\"$url\">$time_string</a><br />\n";
-	    } elsif ($tsv_mode) {
+    if ($html_mode) {
+	print "$fullname \@$username <a href=\"$url\">$time_string</a><br />\n";
+    } elsif ($tsv_mode) {
 #		$url =~ m|.+/([^/]+)$|; # extract the serial number part for time ordered sorting.
 #		$sn = $1;
-		print $time, "\t", $url, "\t", $time_string, "\t", $username, "\t", $fullname, "\t";
-	    } else {
-		print "$fullname $username $time_string $url\n";
-	    }
-	    last;
-	}
+	print $time, "\t", $url, "\t", $time_string, "\t@", $username, "\t", $fullname, "\t";
+    } else {
+	print "$fullname \@$username $time_string $url\n";
     }
 
     $token = $p->get_tag("p");
     $class = $token->[1]{"class"};
-    next if $class ne "js-tweet-text";
+    next if $class !~ /^js-tweet-text/;
 #    my @img, $img_c;
 #    $img_c = 0;
     my $text_line = "";
