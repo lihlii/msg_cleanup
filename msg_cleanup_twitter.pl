@@ -52,7 +52,9 @@ while (my $token = $p->get_tag("div")) {
 # <div class="tweet permalink-tweet js-actionable-user js-hover js-actionable-tweet opened-tweet" data-associated-tweet-id="252421276851920899" data-tweet-id="252421276851920899" data-item-id="252421276851920899" data-screen-name="lihlii" data-name="lihlii" data-user-id="16526760" data-is-reply-to="false" data-mentions="yujie89 awfan">
 
     my $class = $token->[1]{"class"}; 
-    next if $class =~ "tweet permalink-tweet"; # skip duplicate expansion entry.
+    if ($class =~ "proxy-tweet-container") {
+        $p->get_tag("div"); # skip duplicate entry without photo.
+    };
 
     my $tweetid = $token->[1]{"data-tweet-id"};
     next if !$tweetid;
@@ -61,6 +63,7 @@ while (my $token = $p->get_tag("div")) {
     my $fullname = $token->[1]{"data-name"};
     next if !$fullname;
     my $cardtype = $token->[1]{"data-card-type"}; 
+    my $card = $token->[1]{"data-expanded-footer"}; # The photo URL in collapsed card footer.
     $has_photo = 1 if $cardtype eq "photo";
     
     my $url = "https://twitter.com/$username/status/$tweetid";
@@ -68,9 +71,10 @@ while (my $token = $p->get_tag("div")) {
 # find next <a> and <span> tag, with timestamp.
 # <a href="https://twitter.com/awfan/status/252419939175120896" class="tweet-timestamp js-permalink js-nav" title="7:49 AM - 30 Sep 12"><span class="_timestamp js-short-timestamp js-relative-timestamp" data-time="1349016577" data-long-form="true">10m</span></a>
 
-    $token = $p->get_tag("small");
-    my $class = $token->[1]{"class"};
-    next if $class ne "time";
+    while ($token = $p->get_tag("small")) {
+	$class = $token->[1]{"class"};
+	last if $class eq "time";
+    }
     $token = $p->get_tag("span");
     my $time = $token->[1]{"data-time"};
     $time /= 1000 if length($time) > 12; # data-time is in miliseconds if 13 digits long.
@@ -119,22 +123,26 @@ while (my $token = $p->get_tag("div")) {
 
     my $img;
     if ($has_photo) { # contains photo
-	while ($token = $p->get_tag("div")) {
-	    my $class = $token->[1]{"class"};
-	    next if $class ne "media";
+	if ($card) {
+	    decode_entities($card);
+	    my $c = HTML::TokeParser->new(\$card);
+	    while ($token = $c->get_tag("div")) {
+		$class = $token->[1]{"class"}; 
+		next if $class ne "media";
 
-	    $token = $p->get_tag("a");
-	    $class = $token->[1]{"class"};
-	    last if $class ne "twitter-timeline-link";
+		$token = $c->get_tag("img");
+		$img = $token->[1]{"src"};
+	    }
+	} else {
+	    while ($token = $p->get_tag("div")) {
+		$class = $token->[1]{"class"};
+		next if $class ne "media";
 
-	    my $url = $token->[1]{"href"}; 
-	    last if !$url;
-
-	    $token = $p->get_tag("img");
-	    $img = $token->[1]{"src"};
-	    last;
+		$token = $p->get_tag("img");
+		$img = $token->[1]{"src"};
+		last;
+	    }
 	}
-
     }
 
     if ($img) {
