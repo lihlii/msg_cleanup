@@ -61,6 +61,7 @@ while (my $token = $p->get_tag("div")) {
     my $username = $token->[1]{"data-screen-name"};
     next if !$username;
     my $fullname = $token->[1]{"data-name"};
+    $fullname =~ s/\s+$//; # trim ending blank chars including \n
     next if !$fullname;
     my $cardtype = $token->[1]{"data-card-type"}; 
     my $card = $token->[1]{"data-expanded-footer"}; # The photo URL in collapsed card footer.
