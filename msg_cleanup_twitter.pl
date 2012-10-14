@@ -79,7 +79,7 @@ while (my $token = $p->get_tag("div")) {
 	    last if $class eq "tweet-media";
 	}
 	$token = $c->get_tag("img");
-	$img = $iframe_path . $token->[1]{"src"};
+	$img = $iframe_path . $token->[1]{"src"} if $token;
 
 	if ($img) {
 	    if ($html_mode) {
