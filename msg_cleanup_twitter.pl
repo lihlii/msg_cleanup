@@ -10,6 +10,7 @@
 # 5. Input command: twitter_msg_cleanup.pl -h 01.htm > 01o.htm
 # 6. Open 01o.htm in browser to check the result.
 
+use URI::Escape;
 use HTML::TokeParser;
 use HTML::Entities qw(decode_entities);
 use POSIX qw(strftime);
@@ -62,15 +63,16 @@ while (my $token = $p->get_tag("div")) {
     my $class = $token->[1]{"class"}; 
     if ($class =~ "proxy-tweet-container") {
         $p->get_tag("div"); # skip duplicate entry without photo.
+	next;
     };
 
     if ($class eq "media-instance-container") { # media card, photo embedded.
 	$token = $p->get_tag("iframe");
 	my $iframe = $token->[1]{"src"};
+        $iframe = uri_unescape($iframe);
 	my $iframe_path = $iframe;
 	$iframe_path =~ s|[^/]+$||;
 	my $fn = encode(locale_fs => $iframe); # Translate utf8 string to locale language filesystem file name.
-
 	my $c = HTML::TokeParser->new($fn);
 	while ($token = $c->get_tag("div")) {
 	    $class = $token->[1]{"class"}; 
