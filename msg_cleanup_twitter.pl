@@ -51,14 +51,17 @@ while (my $token = $p->get_tag("div")) {
 # Parse the following line to construct the tweet URL, since <a href> tag not always reliable in saved html page for all tweets.
 # <div class="tweet permalink-tweet js-actionable-user js-hover js-actionable-tweet opened-tweet" data-associated-tweet-id="252421276851920899" data-tweet-id="252421276851920899" data-item-id="252421276851920899" data-screen-name="lihlii" data-name="lihlii" data-user-id="16526760" data-is-reply-to="false" data-mentions="yujie89 awfan">
 
+    my $class = $token->[1]{"class"}; 
+    next if $class =~ "tweet permalink-tweet"; # skip duplicate expansion entry.
+
     my $tweetid = $token->[1]{"data-tweet-id"};
     next if !$tweetid;
     my $username = $token->[1]{"data-screen-name"};
     next if !$username;
     my $fullname = $token->[1]{"data-name"};
     next if !$fullname;
-#    my $cardtype = $token->[1]{"data-card-type"}; # FIXME: extract img url, not done.
-#    $has_photo = 1 if $cardtype eq "photo";
+    my $cardtype = $token->[1]{"data-card-type"}; 
+    $has_photo = 1 if $cardtype eq "photo";
     
     my $url = "https://twitter.com/$username/status/$tweetid";
 
@@ -105,7 +108,8 @@ while (my $token = $p->get_tag("div")) {
 	    my $link = $token->[2]{"href"};
 	    my $link_expanded = $token->[2]{"data-expanded-url"};
 	    my $link_ultimate = $token->[2]{"data-ultimate-url"};
-	    $text_line .= "<a href=\"$link\">$link</a>" . ($link_expanded ? " = <a href=\"$link_expanded\">$link_expanded</a>" : "") . (($link_ultimate && $link_ultimate ne $link_expanded) ? " = <a href=\"$link_ultimate\">$link_ultimate</a> " : "");
+	    $text = $p->get_text("/a");
+	    $text_line .= ($link_expanded ? ("<a href=\"$link\">$link_expanded</a>" ) : "<a href=\"$link\">$text</a>") . (($link_ultimate && $link_ultimate ne $link_expanded) ? " = <a href=\"$link_ultimate\">$link_ultimate</a> " : "");
 	    $p->get_tag("/a");
 #	    $link = $link_ultimate ? $link_ultimate : $link_expanded;
 #	    $img[$img_c++] = $link if $link =~ /\.(jpg|gif|png)$/i;
@@ -113,22 +117,27 @@ while (my $token = $p->get_tag("div")) {
 	}
     }
 
-    if ($has_photo) { # contains photo #FIXME: not done.
+    my $img;
+    if ($has_photo) { # contains photo
 	while ($token = $p->get_tag("div")) {
 	    my $class = $token->[1]{"class"};
 	    next if $class ne "media";
 
 	    $token = $p->get_tag("a");
+	    $class = $token->[1]{"class"};
 	    last if $class ne "twitter-timeline-link";
 
 	    my $url = $token->[1]{"href"}; 
 	    last if !$url;
 
 	    $token = $p->get_tag("img");
-	    my $img = $token->[1]{"src"};
-	    last if !$img;
+	    $img = $token->[1]{"src"};
+	    last;
 	}
 
+    }
+
+    if ($img) {
 	if ($html_mode) {
 	    print $text_line, "<br /><img src=\"", $img, "\"><br />\n<br />\n";
 	} elsif ($tsv_mode) {
