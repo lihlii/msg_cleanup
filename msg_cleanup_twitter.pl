@@ -207,6 +207,13 @@ while (my $token = $p->get_tag("div")) {
 }
 
 if ($text_line) { # has last tweet extracted but not printed.
+    if ($html_mode) {
+	$text_line .= "<br />\n<br />\n";
+    } elsif ($tsv_mode) {
+	$text_line .= "\n";
+    } else {
+	$text_line .= "\n\n";
+    }
     print $text_line;
     $text_line = "";
 }
