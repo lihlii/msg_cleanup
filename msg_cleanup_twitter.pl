@@ -13,6 +13,9 @@
 use HTML::TokeParser;
 use HTML::Entities qw(decode_entities);
 use POSIX qw(strftime);
+use Encode;
+use Encode::Locale;
+
 my $html_mode = 0;
 my $tsv_mode = 0;
 my $infile = "index.htm";
@@ -45,8 +48,13 @@ EOF
 
 print $head if $html_mode;
 
+my $text_line = "";
+my $img = "";
+
 while (my $token = $p->get_tag("div")) {
-    $has_photo = 0;
+    my $has_photo_card = 0;
+    my $has_media_iframe = 0;
+    my $is_opened = 0;
 
 # Parse the following line to construct the tweet URL, since <a href> tag not always reliable in saved html page for all tweets.
 # <div class="tweet permalink-tweet js-actionable-user js-hover js-actionable-tweet opened-tweet" data-associated-tweet-id="252421276851920899" data-tweet-id="252421276851920899" data-item-id="252421276851920899" data-screen-name="lihlii" data-name="lihlii" data-user-id="16526760" data-is-reply-to="false" data-mentions="yujie89 awfan">
@@ -56,16 +64,60 @@ while (my $token = $p->get_tag("div")) {
         $p->get_tag("div"); # skip duplicate entry without photo.
     };
 
-    my $tweetid = $token->[1]{"data-tweet-id"};
+    if ($class eq "media-instance-container") { # media card, photo embedded.
+	$token = $p->get_tag("iframe");
+	my $iframe = $token->[1]{"src"};
+	my $iframe_path = $iframe;
+	$iframe_path =~ s|[^/]+$||;
+	my $fn = encode(locale_fs => $iframe); # Translate utf8 string to locale language filesystem file name.
+
+	my $c = HTML::TokeParser->new($fn);
+	while ($token = $c->get_tag("div")) {
+	    $class = $token->[1]{"class"}; 
+	    last if $class eq "tweet-media";
+	}
+	$token = $c->get_tag("img");
+	$img = $iframe_path . $token->[1]{"src"};
+
+	if ($img) {
+	    if ($html_mode) {
+		$text_line .= "<br /><img src=\"$img\">";
+	    } elsif ($tsv_mode) {
+		$text_line .= "<br /><img src=\"$img\">";
+	    } else {
+		$text_line .= "IMG=$img";
+	    }
+	}
+    }
+
+    my $tweetid = $token->[1]{"data-tweet-id"}; # tweet message entry start.
     next if !$tweetid;
+
+    if ($text_line) { # has last tweet extracted but not printed.
+	if ($html_mode) {
+	    $text_line .= "<br />\n<br />\n";
+	} elsif ($tsv_mode) {
+	    $text_line .= "\n";
+	} else {
+	    $text_line .= "\n\n";
+	}
+	print $text_line;
+	$text_line = "";
+	$img ="";
+    }
+
     my $username = $token->[1]{"data-screen-name"};
     next if !$username;
     my $fullname = $token->[1]{"data-name"};
     $fullname =~ s/\s+$//; # trim ending blank chars including \n
     next if !$fullname;
     my $cardtype = $token->[1]{"data-card-type"}; 
-    my $card = $token->[1]{"data-expanded-footer"}; # The photo URL in collapsed card footer.
-    $has_photo = 1 if $cardtype eq "photo";
+    $has_photo_card = 1 if $cardtype eq "photo";
+    my $footer = $token->[1]{"data-expanded-footer"}; # The photo URL in collapsed card footer.
+    if ($footer) {
+    	$is_opened = 1 if $class =~ /opened-tweet/;
+	$has_media_iframe = 1 if $is_opened && $footer =~ /js-tweet-media-container/;
+    }
     
     my $url = "https://twitter.com/$username/status/$tweetid";
 
@@ -96,7 +148,6 @@ while (my $token = $p->get_tag("div")) {
     next if $class !~ /^js-tweet-text/;
 #    my @img, $img_c;
 #    $img_c = 0;
-    my $text_line = "";
     while ($token = $p->get_token) {
 	if ($token->[0] eq "E" && $token->[1] eq "p") { # end of tweet text.
 	    $text_line =~ s/^\s+//; # trim beginning blank chars including \n
@@ -122,47 +173,40 @@ while (my $token = $p->get_tag("div")) {
 	}
     }
 
-    my $img;
-    if ($has_photo) { # contains photo
-	if ($card) {
-	    decode_entities($card);
-	    my $c = HTML::TokeParser->new(\$card);
+    if ($has_photo_card) { # contains photo card.
+	if ($footer) {
+	    decode_entities($footer);
+	    my $c = HTML::TokeParser->new(\$footer);
 	    while ($token = $c->get_tag("div")) {
 		$class = $token->[1]{"class"}; 
-		next if $class ne "media";
-
-		$token = $c->get_tag("img");
-		$img = $token->[1]{"src"};
+		last if $class eq "media";
 	    }
+	    $token = $c->get_tag("img");
+	    $img = $token->[1]{"src"};
 	} else {
 	    while ($token = $p->get_tag("div")) {
 		$class = $token->[1]{"class"};
-		next if $class ne "media";
+		last if $class eq "media";
+	    }
+	    $token = $p->get_tag("img");
+	    $img = $token->[1]{"src"};
+	}
 
-		$token = $p->get_tag("img");
-		$img = $token->[1]{"src"};
-		last;
+	if ($img) {
+	    if ($html_mode) {
+		$text_line .= "<br /><img src=\"$img\">";
+	    } elsif ($tsv_mode) {
+		$text_line .= "<br /><img src=\"$img\">";
+	    } else {
+		$text_line .= "IMG=$img";
 	    }
 	}
     }
+}
 
-    if ($img) {
-	if ($html_mode) {
-	    print $text_line, "<br /><img src=\"", $img, "\"><br />\n<br />\n";
-	} elsif ($tsv_mode) {
-	    print $text_line, "<br /><img src=\"", $img, "\">\n";
-	} else {
-	    print $text_line, "IMG=", $img, "\n\n";
-	}
-    } else {
-	if ($html_mode) {
-	    print $text_line, "<br />\n<br />\n";
-	} elsif ($tsv_mode) {
-	    print $text_line, "\n";
-	} else {
-	    print $text_line, "\n\n";
-	}
-    }
+if ($text_line) { # has last tweet extracted but not printed.
+    print $text_line;
+    $text_line = "";
 }
 
 print "</body>\n</html>\n" if $html_mode;
