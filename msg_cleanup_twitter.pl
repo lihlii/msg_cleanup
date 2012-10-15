@@ -12,7 +12,7 @@
 
 use URI::Escape;
 use HTML::TokeParser;
-use HTML::Entities qw(decode_entities);
+use HTML::Entities;
 use POSIX qw(strftime);
 use Encode;
 use Encode::Locale;
@@ -82,6 +82,7 @@ while (my $token = $p->get_tag("div")) {
 	$img = $iframe_path . $token->[1]{"src"} if $token;
 
 	if ($img) {
+            $img = uri_escape($img, "#");
 	    if ($html_mode) {
 		$text_line .= "<br /><img src=\"$img\">";
 	    } elsif ($tsv_mode) {
@@ -195,6 +196,7 @@ while (my $token = $p->get_tag("div")) {
 	}
 
 	if ($img) {
+            $img = uri_escape($img, "#");
 	    if ($html_mode) {
 		$text_line .= "<br /><img src=\"$img\">";
 	    } elsif ($tsv_mode) {
