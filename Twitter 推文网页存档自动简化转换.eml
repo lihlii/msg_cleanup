@@ -35,7 +35,7 @@ href="https://www.wuala.com/lihlii_%E7%AB%A5%E8%A8%80%E6%97%A0%E5%BF%8C/Topic/%E
       <li>运行 tsv2html.bat 会自动将 msg_merge_twitter.txt 文件转换为简化的 HTML
         文件适合作为存档。</li>
       <li>也可以直接运行 msg_merge_sort_twitter_htm.bat，则自动调用第 5. 6.
-        步所述脚本成序，在浏览器中打开生成的 tsv2htm.htm 文件，如果有内嵌图片，则最好再以完整网页格式保存一次，这样可以确保
+        步所述脚本程序，在浏览器中打开生成的 tsv2htm.htm 文件，如果有内嵌图片，则最好再以完整网页格式保存一次，这样可以确保
         将内嵌图片也保存到本地存档。<br>
       </li>
       <li>拷倍网页内容后可粘贴到邮件编辑器（如 Thunderbird）或博客编辑器中发布。发布的推文格式如 <a
