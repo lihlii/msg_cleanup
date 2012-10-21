@@ -16,24 +16,29 @@ use HTML::Entities;
 use POSIX qw(strftime);
 use Encode;
 use Encode::Locale;
+use Getopt::Std;
 
 my $html_mode = 0;
 my $tsv_mode = 0;
+my $mobile_input = 0;
 my $infile = "index.htm";
+my %opts;
 
-if ($ARGV[0] eq "-?") {
-    print "Usage: $0 [-h | -t] <input html file> > <output file>\n-h: Output HTML format, otherwise text format.\n-t: Output Tab seperated value format with HTML data fields for further processing like sorting.\n";
+getopt('', \%opts);
+
+if ($opts{'?'} == 1) {
+    print "Usage: $0 [-h|-t] [-m] <input html file> > <output file>\n-h: Output HTML format, otherwise text format.\n-t: Output Tab seperated value format with HTML data fields for further processing like sorting.\n-m: input file is mobile.twitter.com page.\n";
     exit;
 }
 
-if ($ARGV[0] eq "-h") {
+if ($opts{'h'} == 1) {
     $html_mode = 1;
-    shift;
+} elsif ($opts{'t'} == 1) {
+    $tsv_mode = 1;
 }
 
-if ($ARGV[0] eq "-t") {
-    $tsv_mode = 1;
-    shift;
+if ($opts{'m'} == 1) {
+    $mobile_input = 1;
 }
 
 open(my $fh, "<:utf8", (shift || $infile)) || die "Can't open file: $!";
