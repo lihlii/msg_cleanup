@@ -55,7 +55,7 @@ my $img = "";
 my $fullname = "";
 my $username = "";
 my $url = "";
-my $sn = "";
+my $tweetid = "";
 my $time, $time_string;
 
 sub print_tweet {
@@ -63,11 +63,7 @@ sub print_tweet {
 	if ($html_mode) {
 	    $text_line = "$fullname \@$username <a href=\"$url\">$time_string</a><br />\n$text_line<br />\n<br />\n";
 	} elsif ($tsv_mode) {
-	    if ($mobile_input) {
-		$text_line = "$sn\t$url\t$time_string\t\@$username\t$fullname\t$text_line\n";
-	    } else {
-		$text_line = "$time\t$url\t$time_string\t\@$username\t$fullname\t$text_line\n";
-	    }
+	    $text_line = "$tweetid\t$url\t$time_string\t\@$username\t$fullname\t$text_line\n";
 	} else {
 	    $text_line = "$fullname \@$username $time_string $url\n$text_line\n\n";
 	}
@@ -91,11 +87,11 @@ while (my $token = $p->get_token) {
         if ($token->[1] eq "div") {
 	    my $class = $token->[2]{"class"}; 
 
-	    if ($class eq "fullname") {
+	    if ($class eq "fullname" || $class eq "full-name") { # Chrome and Firefox saved pages differ.
 		print_tweet;
-		$fullname = $p->get_text("/div");
+		$fullname = $p->get_trimmed_text("/div");
 		next;
-	    } elsif ($class eq "tweet-text") {
+	    } elsif ($class =~ /tweet-text/) {
 		while (my $token = $p->get_token) {
 		    if ($token->[0] eq "E" && $token->[1] eq "div") { # end of tweet text.
 			$text_line =~ s/^\s+//; # trim beginning blank chars including \n
@@ -106,7 +102,7 @@ while (my $token = $p->get_token) {
 			my $text = $token->[1];
 			decode_entities($text);
 			$text_line .= $text;
-		    } elsif ($token->[0] eq "S" && $token->[1] eq "a" && $token->[2]{"class"} eq "twitter_external_link") {
+		    } elsif ($token->[0] eq "S" && $token->[1] eq "a" && ($token->[2]{"class"} eq "twitter_external_link" || $token->[2]{"class"} =~ /twitter-timeline-link/)) {
 			my $link = $token->[2]{"href"};
 			my $link_expanded = $token->[2]{"data-url"};
 			$text = $p->get_text("/a");
@@ -121,8 +117,19 @@ while (my $token = $p->get_token) {
 		$url =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
 		$url = "$1/$2/status/$3";
 		$username = $2;
-		$sn = $3;
+		$tweetid = $3;
 		$time_string = $p->get_text("/a");
+		next;
+	    } elsif ($class eq "timestamp-row") { # Firefox saved apple mobile twitter page.
+		my $token = $p->get_tag("a");
+		$url = $token->[1]{"href"};
+		$url =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
+		$url = "$1/$2/status/$3";
+		$username = $2;
+		$tweetid = $3;
+		$time = $token->[1]{"timestamp"};
+		$time /= 1000 if length($time) > 12; # data-time is in miliseconds if 13 digits long.
+		$time_string = strftime "%Y-%m-%d %H:%M:%S UTC", gmtime($time);
 		next;
 	    } elsif ($class eq "card-photo") {
 		my $token = $p->get_tag("img");
@@ -144,7 +151,13 @@ while (my $token = $p->get_token) {
 	    my $class = $token->[2]{"class"}; 
 	    if ($class eq "fullname") {
 		print_tweet;
-		$fullname = $p->get_text("/strong");
+		$fullname = $p->get_trimmed_text("/strong");
+	    }
+	    next;
+	} elsif ($token->[1] eq "span") {
+	    my $class = $token->[2]{"class"}; 
+	    if ($class eq "full-name") {
+		$fullname = $p->get_trimmed_text("/span");
 	    }
 	    next;
 	} elsif ($token->[1] eq "td") {
@@ -155,13 +168,23 @@ while (my $token = $p->get_token) {
 		$url =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
 		$url = "$1/$2/status/$3";
 		$username = $2;
-		$sn = $3;
+		$tweetid = $3;
 		$time_string = $p->get_text("/a");
 	    }
 	    next;
+	} elsif ($token->[1] eq "li") {
+	    my $screen_name = $token->[2]{"screen_name"}; 
+	    next if !$screen_name;
+	    print_tweet;
+
+	    $username = $screen_name;
+	    $tweetid = $token->[2]{"data_id"}; 
+	    $time = $token->[2]{"timestamp"}; 
+	    $time /= 1000 if length($time) > 12; # data-time is in miliseconds if 13 digits long.
+	    $time_string = strftime "%Y-%m-%d %H:%M:%S UTC", gmtime($time);
+	    $url = "https://twitter.com/$username/status/$tweetid";
 	}
     }
-
 
     # Handle non-mobile page.  Search for "div" tag.
     next if $token->[0] ne "S"; # Find start tag.
@@ -207,7 +230,7 @@ while (my $token = $p->get_token) {
 	}
     }
 
-    my $tweetid = $token->[2]{"data-tweet-id"}; # tweet message entry start.
+    $tweetid = $token->[2]{"data-tweet-id"}; # tweet message entry start.
     next if !$tweetid;
 
 # has last tweet extracted but not printed.
