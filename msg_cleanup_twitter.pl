@@ -37,10 +37,6 @@ if ($opts{'h'} == 1) {
     $tsv_mode = 1;
 }
 
-if ($opts{'m'} == 1) {
-    $mobile_input = 1;
-}
-
 open(my $fh, "<:utf8", (shift || $infile)) || die "Can't open file: $!";
 $p = HTML::TokeParser->new($fh);
 
@@ -60,7 +56,6 @@ my $fullname = "";
 my $username = "";
 my $url = "";
 my $sn = "";
-my $mobile_single = 0; # is mobile single tweet expanded page.
 my $time, $time_string;
 
 sub print_tweet {
@@ -68,7 +63,11 @@ sub print_tweet {
 	if ($html_mode) {
 	    $text_line = "$fullname \@$username <a href=\"$url\">$time_string</a><br />\n$text_line<br />\n<br />\n";
 	} elsif ($tsv_mode) {
-	    $text_line = "$sn\t$url\t$time_string\t\@$username\t$fullname\t$text_line\n";
+	    if ($mobile_input) {
+		$text_line = "$sn\t$url\t$time_string\t\@$username\t$fullname\t$text_line\n";
+	    } else {
+		$text_line = "$time\t$url\t$time_string\t\@$username\t$fullname\t$text_line\n";
+	    }
 	} else {
 	    $text_line = "$fullname \@$username $time_string $url\n$text_line\n\n";
 	}
@@ -80,24 +79,23 @@ sub print_tweet {
 
 while (my $token = $p->get_token) {
 
+    if ($token->[0] eq "S" && $token->[1] eq "link" && $token->[2]{"rel"} =~ /icon/) {
+	$mobile_input = 0 if $token->[2]{"href"} =~ m|//twitter.com/|;
+	$mobile_input = 1 if $token->[2]{"href"} =~ m|/twitter-mobile/|; # mobile twitter page.
+	next;
+    }
+
     # Handle mobile page.
     if ($mobile_input) {
         next if $token->[0] ne "S"; # Find start tag.
         if ($token->[1] eq "div") {
 	    my $class = $token->[2]{"class"}; 
 
-	    if ($class eq "main-tweet-container") {
-		$mobile_single = 1;
-		next;
-	    } elsif ($class eq "timeline") {
-		$mobile_single = 0;
-		next;
-	    } elsif ($class eq "fullname") {
+	    if ($class eq "fullname") {
+		print_tweet;
 		$fullname = $p->get_text("/div");
 		next;
 	    } elsif ($class eq "tweet-text") {
-		print_tweet;
-
 		while (my $token = $p->get_token) {
 		    if ($token->[0] eq "E" && $token->[1] eq "div") { # end of tweet text.
 			$text_line =~ s/^\s+//; # trim beginning blank chars including \n
@@ -145,8 +143,8 @@ while (my $token = $p->get_token) {
 	} elsif ($token->[1] eq "strong") {
 	    my $class = $token->[2]{"class"}; 
 	    if ($class eq "fullname") {
+		print_tweet;
 		$fullname = $p->get_text("/strong");
-		next;
 	    }
 	    next;
 	} elsif ($token->[1] eq "td") {
@@ -177,7 +175,7 @@ while (my $token = $p->get_token) {
 # <div class="tweet permalink-tweet js-actionable-user js-hover js-actionable-tweet opened-tweet" data-associated-tweet-id="252421276851920899" data-tweet-id="252421276851920899" data-item-id="252421276851920899" data-screen-name="lihlii" data-name="lihlii" data-user-id="16526760" data-is-reply-to="false" data-mentions="yujie89 awfan">
 
     my $class = $token->[2]{"class"}; 
-    if ($class =~ "proxy-tweet-container") {
+    if ($class =~ /proxy-tweet-container/) {
         $p->get_tag("div"); # skip duplicate entry without photo.
 	next;
     };
