@@ -56,8 +56,119 @@ print $head if $html_mode;
 
 my $text_line = "";
 my $img = "";
+my $fullname = "";
+my $username = "";
+my $url = "";
+my $sn = "";
+my $mobile_single = 0; # is mobile single tweet expanded page.
+my $time, $time_string;
 
-while (my $token = $p->get_tag("div")) {
+sub print_tweet {
+    if ($text_line) {
+	if ($html_mode) {
+	    $text_line = "$fullname \@$username <a href=\"$url\">$time_string</a><br />\n$text_line<br />\n<br />\n";
+	} elsif ($tsv_mode) {
+	    $text_line = "$sn\t$url\t$time_string\t\@$username\t$fullname\t$text_line\n";
+	} else {
+	    $text_line = "$fullname \@$username $time_string $url\n$text_line\n\n";
+	}
+	print $text_line;
+	$text_line = "";
+	$img ="";
+    }
+}
+
+while (my $token = $p->get_token) {
+
+    # Handle mobile page.
+    if ($mobile_input) {
+        next if $token->[0] ne "S"; # Find start tag.
+        if ($token->[1] eq "div") {
+	    my $class = $token->[2]{"class"}; 
+
+	    if ($class eq "main-tweet-container") {
+		$mobile_single = 1;
+		next;
+	    } elsif ($class eq "timeline") {
+		$mobile_single = 0;
+		next;
+	    } elsif ($class eq "fullname") {
+		$fullname = $p->get_text("/div");
+		next;
+	    } elsif ($class eq "tweet-text") {
+		print_tweet;
+
+		while (my $token = $p->get_token) {
+		    if ($token->[0] eq "E" && $token->[1] eq "div") { # end of tweet text.
+			$text_line =~ s/^\s+//; # trim beginning blank chars including \n
+			$text_line =~ s/\s+$//; # trim ending blank chars including \n
+			$text_line =~ y/\n/ /; # remove in-between newline chars.
+			last;
+		    } elsif ($token->[0] eq "T") {
+			my $text = $token->[1];
+			decode_entities($text);
+			$text_line .= $text;
+		    } elsif ($token->[0] eq "S" && $token->[1] eq "a" && $token->[2]{"class"} eq "twitter_external_link") {
+			my $link = $token->[2]{"href"};
+			my $link_expanded = $token->[2]{"data-url"};
+			$text = $p->get_text("/a");
+			$text_line .= ($link_expanded ? ("<a href=\"$link\">$link_expanded</a>" ) : "<a href=\"$link\">$text</a>");
+			$p->get_tag("/a");
+		    }
+		}
+		next;
+	    } elsif ($class eq "metadata") {
+		my $token = $p->get_tag("a");
+		$url = $token->[1]{"href"};
+		$url =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
+		$url = "$1/$2/status/$3";
+		$username = $2;
+		$sn = $3;
+		$time_string = $p->get_text("/a");
+		next;
+	    } elsif ($class eq "card-photo") {
+		my $token = $p->get_tag("img");
+		$img = $token->[1]{"src"};
+		next if !$img;
+		$img = uri_escape($img, "#");
+		if ($html_mode) {
+		    $text_line .= "<br /><img src=\"$img\">";
+		} elsif ($tsv_mode) {
+		    $text_line .= "<br /><img src=\"$img\">";
+		} else {
+		    $text_line .= "IMG=$img";
+		}
+		next;
+	    }
+
+	    next;
+	} elsif ($token->[1] eq "strong") {
+	    my $class = $token->[2]{"class"}; 
+	    if ($class eq "fullname") {
+		$fullname = $p->get_text("/strong");
+		next;
+	    }
+	    next;
+	} elsif ($token->[1] eq "td") {
+	    my $class = $token->[2]{"class"}; 
+	    if ($class eq "timestamp") {
+		my $token = $p->get_tag("a");
+		$url = $token->[1]{"href"};
+		$url =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
+		$url = "$1/$2/status/$3";
+		$username = $2;
+		$sn = $3;
+		$time_string = $p->get_text("/a");
+	    }
+	    next;
+	}
+    }
+
+
+    # Handle non-mobile page.  Search for "div" tag.
+    next if $token->[0] ne "S"; # Find start tag.
+    next if ($token->[1] ne "div");
+
     my $has_photo_card = 0;
     my $has_media_iframe = 0;
     my $is_opened = 0;
@@ -65,7 +176,7 @@ while (my $token = $p->get_tag("div")) {
 # Parse the following line to construct the tweet URL, since <a href> tag not always reliable in saved html page for all tweets.
 # <div class="tweet permalink-tweet js-actionable-user js-hover js-actionable-tweet opened-tweet" data-associated-tweet-id="252421276851920899" data-tweet-id="252421276851920899" data-item-id="252421276851920899" data-screen-name="lihlii" data-name="lihlii" data-user-id="16526760" data-is-reply-to="false" data-mentions="yujie89 awfan">
 
-    my $class = $token->[1]{"class"}; 
+    my $class = $token->[2]{"class"}; 
     if ($class =~ "proxy-tweet-container") {
         $p->get_tag("div"); # skip duplicate entry without photo.
 	next;
@@ -98,36 +209,26 @@ while (my $token = $p->get_tag("div")) {
 	}
     }
 
-    my $tweetid = $token->[1]{"data-tweet-id"}; # tweet message entry start.
+    my $tweetid = $token->[2]{"data-tweet-id"}; # tweet message entry start.
     next if !$tweetid;
 
-    if ($text_line) { # has last tweet extracted but not printed.
-	if ($html_mode) {
-	    $text_line .= "<br />\n<br />\n";
-	} elsif ($tsv_mode) {
-	    $text_line .= "\n";
-	} else {
-	    $text_line .= "\n\n";
-	}
-	print $text_line;
-	$text_line = "";
-	$img ="";
-    }
+# has last tweet extracted but not printed.
+    print_tweet;
 
-    my $username = $token->[1]{"data-screen-name"};
+    $username = $token->[2]{"data-screen-name"};
     next if !$username;
-    my $fullname = $token->[1]{"data-name"};
+    $fullname = $token->[2]{"data-name"};
     $fullname =~ s/\s+$//; # trim ending blank chars including \n
     next if !$fullname;
-    my $cardtype = $token->[1]{"data-card-type"}; 
+    my $cardtype = $token->[2]{"data-card-type"}; 
     $has_photo_card = 1 if $cardtype eq "photo";
-    my $footer = $token->[1]{"data-expanded-footer"}; # The photo URL in collapsed card footer.
+    my $footer = $token->[2]{"data-expanded-footer"}; # The photo URL in collapsed card footer.
     if ($footer) {
     	$is_opened = 1 if $class =~ /opened-tweet/;
 	$has_media_iframe = 1 if $is_opened && $footer =~ /js-tweet-media-container/;
     }
     
-    my $url = "https://twitter.com/$username/status/$tweetid";
+    $url = "https://twitter.com/$username/status/$tweetid";
 
 # find next <a> and <span> tag, with timestamp.
 # <a href="https://twitter.com/awfan/status/252419939175120896" class="tweet-timestamp js-permalink js-nav" title="7:49 AM - 30 Sep 12"><span class="_timestamp js-short-timestamp js-relative-timestamp" data-time="1349016577" data-long-form="true">10m</span></a>
@@ -137,19 +238,9 @@ while (my $token = $p->get_tag("div")) {
 	last if $class eq "time";
     }
     $token = $p->get_tag("span");
-    my $time = $token->[1]{"data-time"};
+    $time = $token->[1]{"data-time"};
     $time /= 1000 if length($time) > 12; # data-time is in miliseconds if 13 digits long.
-    my $time_string = strftime "%Y-%m-%d %H:%M:%S UTC", gmtime($time);
-
-    if ($html_mode) {
-	print "$fullname \@$username <a href=\"$url\">$time_string</a><br />\n";
-    } elsif ($tsv_mode) {
-#		$url =~ m|.+/([^/]+)$|; # extract the serial number part for time ordered sorting.
-#		$sn = $1;
-	print $time, "\t", $url, "\t", $time_string, "\t@", $username, "\t", $fullname, "\t";
-    } else {
-	print "$fullname \@$username $time_string $url\n";
-    }
+    $time_string = strftime "%Y-%m-%d %H:%M:%S UTC", gmtime($time);
 
     $token = $p->get_tag("p");
     $class = $token->[1]{"class"};
@@ -162,13 +253,11 @@ while (my $token = $p->get_tag("div")) {
 	    $text_line =~ s/\s+$//; # trim ending blank chars including \n
 	    $text_line =~ y/\n/ /; # remove in-between newline chars.
 	    last;
-	}
-	if ($token->[0] eq "T") {
+	} elsif ($token->[0] eq "T") {
 	    my $text = $token->[1];
 	    decode_entities($text);
 	    $text_line .= $text;
-	}
-	if ($token->[0] eq "S" && $token->[1] eq "a" && $token->[2]{class} eq "twitter-timeline-link") {
+	} elsif ($token->[0] eq "S" && $token->[1] eq "a" && $token->[2]{class} eq "twitter-timeline-link") {
 	    my $link = $token->[2]{"href"};
 	    my $link_expanded = $token->[2]{"data-expanded-url"};
 	    my $link_ultimate = $token->[2]{"data-ultimate-url"};
@@ -213,17 +302,8 @@ while (my $token = $p->get_tag("div")) {
     }
 }
 
-if ($text_line) { # has last tweet extracted but not printed.
-    if ($html_mode) {
-	$text_line .= "<br />\n<br />\n";
-    } elsif ($tsv_mode) {
-	$text_line .= "\n";
-    } else {
-	$text_line .= "\n\n";
-    }
-    print $text_line;
-    $text_line = "";
-}
+# has last tweet extracted but not printed.
+print_tweet;
 
 print "</body>\n</html>\n" if $html_mode;
 
