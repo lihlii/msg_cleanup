@@ -232,10 +232,10 @@ while (my $token = $p->get_token) {
 
     my $t = $token->[2]{"data-tweet-id"}; # tweet message entry start.
     next if !$t;
-    $tweetid = $t;
 
 # has last tweet extracted but not printed.
     print_tweet;
+    $tweetid = $t;
 
     $username = $token->[2]{"data-screen-name"};
     next if !$username;
