@@ -56,7 +56,7 @@ my $fullname = "";
 my $username = "";
 my $url = "";
 my $tweetid = "";
-my $time, $time_string;
+my ($time, $time_string);
 
 sub print_tweet {
     if ($text_line) {
@@ -201,22 +201,22 @@ while (my $token = $p->get_token) {
     if ($class =~ /proxy-tweet-container/) {
         $p->get_tag("div"); # skip duplicate entry without photo.
 	next;
-    };
+    }
 
     if ($class eq "media-instance-container") { # media card, photo embedded.
-	$token = $p->get_tag("iframe");
-	my $iframe = $token->[1]{"src"};
+	my $t = $p->get_tag("iframe");
+	my $iframe = $t->[1]{"src"};
         $iframe = uri_unescape($iframe);
 	my $iframe_path = $iframe;
 	$iframe_path =~ s|[^/]+$||;
 	my $fn = encode(locale_fs => $iframe); # Translate utf8 string to locale language filesystem file name.
 	my $c = HTML::TokeParser->new($fn);
-	while ($token = $c->get_tag("div")) {
-	    $class = $token->[1]{"class"}; 
+	while ($t = $c->get_tag("div")) {
+	    $class = $t->[1]{"class"}; 
 	    last if $class eq "tweet-media";
 	}
-	$token = $c->get_tag("img");
-	$img = $iframe_path . $token->[1]{"src"} if $token;
+	$t = $c->get_tag("img");
+	$img = $iframe_path . $t->[1]{"src"} if $t;
 
 	if ($img) {
             $img = uri_escape($img, "#");
