@@ -211,9 +211,7 @@ while (my $token = $p->get_token) {
 	my $iframe_path = $iframe;
 	$iframe_path =~ s|[^/]+$||;
 	my $fn = decode(utf8 => $iframe);
-	print "{--- fn=$fn ---}\n";
 	my $fn = encode(locale_fs => $fn); # Translate utf8 string to locale language filesystem file name.
-	print "{--- fn=$fn ---}\n";
 
 # FIXME: WinXP can save files with unicode characters, but Perl can only handle single charset filenames like cp936.  So unicode chars in filename outside of current code page will be translated to "?" and won't match with the filename on filesystem.
 
