@@ -24,6 +24,7 @@ my $mobile_input = 0;
 my $infile = "index.htm";
 my %opts;
 
+# binmode(STDOUT, ":utf8");
 getopt('', \%opts);
 
 if ($opts{'?'} == 1) {
@@ -209,8 +210,16 @@ while (my $token = $p->get_token) {
         $iframe = uri_unescape($iframe);
 	my $iframe_path = $iframe;
 	$iframe_path =~ s|[^/]+$||;
-	my $fn = encode(locale_fs => $iframe); # Translate utf8 string to locale language filesystem file name.
+	my $fn = decode(utf8 => $iframe);
+	print "{--- fn=$fn ---}\n";
+	my $fn = encode(locale_fs => $fn); # Translate utf8 string to locale language filesystem file name.
+	print "{--- fn=$fn ---}\n";
+
+# FIXME: WinXP can save files with unicode characters, but Perl can only handle single charset filenames like cp936.  So unicode chars in filename outside of current code page will be translated to "?" and won't match with the filename on filesystem.
+
 	my $c = HTML::TokeParser->new($fn);
+	next if !$c;
+
 	while ($t = $c->get_tag("div")) {
 	    $class = $t->[1]{"class"}; 
 	    last if $class eq "tweet-media";
