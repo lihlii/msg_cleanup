@@ -21,7 +21,7 @@ while (<>) {
     push @tsv, [ split /\t/ ];
 }
 
-@tsvs = sort { $a->[0] cmp $b->[0] } @tsv;
+@tsvs = sort { $a->[0] <=> $b->[0] } @tsv;
 
 for (my $i = 0; $i < @tsvs; $i++) {
     $time_string = $tsvs[$i][2];
