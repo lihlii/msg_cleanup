@@ -24,7 +24,7 @@ my $mobile_input = 0;
 my $infile = "index.htm";
 my %opts;
 
-# binmode(STDOUT, ":utf8");
+binmode(STDOUT, ":utf8");
 getopt('', \%opts);
 
 if ($opts{'?'} == 1) {
@@ -222,8 +222,12 @@ while (my $token = $p->get_token) {
     }
 
     if ($class eq "media-instance-container") { # media card, photo embedded.
-	my $t = $p->get_tag("iframe");
-	my $iframe = $t->[1]{"src"};
+	$token = $p->get_token;
+	$token = $p->get_token;
+	$token = $p->get_token;
+
+	next if $token->[0] ne "S" || $token->[1] ne "iframe";
+	my $iframe = $token->[2]{"src"};
         $iframe = uri_unescape($iframe);
 	my $iframe_path = $iframe;
 	$iframe_path =~ s|[^/]+$||;
