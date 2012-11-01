@@ -1,2 +1,2 @@
 @echo off
-msg_merge_twitter.bat | sort -nu > msg_merge_twitter.txt
+call msg_merge_twitter.bat |msg_sort_twitter.bat > merge_sort.tsv

@@ -57,7 +57,8 @@ my $fullname = "";
 my $username = "";
 my $url = "";
 my $tweetid = "";
-my ($time, $time_string);
+my $time = "";
+my $time_string = "";
 
 sub print_tweet {
     if ($text_line) {
@@ -71,6 +72,12 @@ sub print_tweet {
 	print $text_line;
 	$text_line = "";
 	$img ="";
+	$fullname = "";
+	$username = "";
+	$url = "";
+	$tweetid = "";
+	$time = "";
+	$time_string = "";
     }
 }
 
@@ -90,7 +97,11 @@ while (my $token = $p->get_token) {
 
 	    if ($class eq "fullname" || $class eq "full-name") { # Chrome and Firefox saved pages differ.
 		print_tweet;
-		$fullname = $p->get_trimmed_text("/div");
+		$fullname = $p->get_trimmed_text("/div") if !$fullname;
+		next;
+	    } elsif ($class eq "username") { # winhttrack downloaded pages have this.
+		$username = $p->get_trimmed_text("/div") if !$username;
+		$username =~ s/@(.*)/\1/;
 		next;
 	    } elsif ($class =~ /tweet-text/) {
 		while (my $token = $p->get_token) {
@@ -114,23 +125,27 @@ while (my $token = $p->get_token) {
 		next;
 	    } elsif ($class eq "metadata") {
 		my $token = $p->get_tag("a");
-		$url = $token->[1]{"href"};
-		$url =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
-		$url = "$1/$2/status/$3";
-		$username = $2;
-		$tweetid = $3;
-		$time_string = $p->get_text("/a");
+		if (!$url) {
+		    my $href = $token->[1]{"href"};
+		    $href =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
+		    $url = "$1/$2/status/$3" if $3;
+		    $username = $2 if !$username;
+		    $tweetid = $3 if !$tweetid;
+		    $time_string = $p->get_text("/a") if !$time_string;
+		}
 		next;
 	    } elsif ($class eq "timestamp-row") { # Firefox saved apple mobile twitter page.
 		my $token = $p->get_tag("a");
-		$url = $token->[1]{"href"};
-		$url =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
-		$url = "$1/$2/status/$3";
-		$username = $2;
-		$tweetid = $3;
-		$time = $token->[1]{"timestamp"};
-		$time /= 1000 if length($time) > 12; # data-time is in miliseconds if 13 digits long.
-		$time_string = strftime "%Y-%m-%d %H:%M:%S UTC", gmtime($time);
+		if (!$url) {
+		    my $href = $token->[1]{"href"};
+		    $href =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
+		    $url = "$1/$2/status/$3" if $3;
+		    $username = $2 if !$username;
+		    $tweetid = $3 if !$tweetid;
+		    $time = $token->[1]{"timestamp"} if !$time;
+		    $time /= 1000 if length($time) > 12; # data-time is in miliseconds if 13 digits long.
+		    $time_string = strftime "%Y-%m-%d %H:%M:%S UTC", gmtime($time) if !$time_string;
+		}
 		next;
 	    } elsif ($class eq "card-photo") {
 		my $token = $p->get_tag("img");
@@ -163,14 +178,16 @@ while (my $token = $p->get_token) {
 	    next;
 	} elsif ($token->[1] eq "td") {
 	    my $class = $token->[2]{"class"}; 
-	    if ($class eq "timestamp") {
+	    if ($class eq "timestamp" || $class eq "action-last") {
 		my $token = $p->get_tag("a");
-		$url = $token->[1]{"href"};
-		$url =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
-		$url = "$1/$2/status/$3";
-		$username = $2;
-		$tweetid = $3;
-		$time_string = $p->get_text("/a");
+		if (!$url) {
+		    my $href = $token->[1]{"href"};
+		    $href =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
+		    $url = "$1/$2/status/$3" if $3;
+		    $username = $2 if !$username;
+		    $tweetid = $3 if !$tweetid;
+		    $time_string = $p->get_text("/a") if !$time_string;
+		}
 	    }
 	    next;
 	} elsif ($token->[1] eq "li") {
@@ -178,12 +195,12 @@ while (my $token = $p->get_token) {
 	    next if !$screen_name;
 	    print_tweet;
 
-	    $username = $screen_name;
-	    $tweetid = $token->[2]{"data_id"}; 
-	    $time = $token->[2]{"timestamp"}; 
+	    $username = $screen_name if !$username;
+	    $tweetid = $token->[2]{"data_id"} if !$tweetid; 
+	    $time = $token->[2]{"timestamp"} if !$time; 
 	    $time /= 1000 if length($time) > 12; # data-time is in miliseconds if 13 digits long.
-	    $time_string = strftime "%Y-%m-%d %H:%M:%S UTC", gmtime($time);
-	    $url = "https://twitter.com/$username/status/$tweetid";
+	    $time_string = strftime "%Y-%m-%d %H:%M:%S UTC", gmtime($time) if !$time_string;
+	    $url = "https://twitter.com/$username/status/$tweetid" if !$url;
 	}
     }
 
