@@ -128,7 +128,7 @@ while (my $token = $p->get_token) {
 		if (!$url) {
 		    my $href = $token->[1]{"href"};
 		    $href =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
-		    $url = "$1/$2/status/$3" if $3;
+		    $url = "https://twitter.com/$2/status/$3" if $3;
 		    $username = $2 if !$username;
 		    $tweetid = $3 if !$tweetid;
 		    $time_string = $p->get_text("/a") if !$time_string;
@@ -139,7 +139,7 @@ while (my $token = $p->get_token) {
 		if (!$url) {
 		    my $href = $token->[1]{"href"};
 		    $href =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
-		    $url = "$1/$2/status/$3" if $3;
+		    $url = "https://twitter.com/$2/status/$3" if $3;
 		    $username = $2 if !$username;
 		    $tweetid = $3 if !$tweetid;
 		    $time = $token->[1]{"timestamp"} if !$time;
@@ -183,7 +183,7 @@ while (my $token = $p->get_token) {
 		if (!$url) {
 		    my $href = $token->[1]{"href"};
 		    $href =~ m|^(.+)/([^/]+)/status/(\d+).*$|;
-		    $url = "$1/$2/status/$3" if $3;
+		    $url = "https://twitter.com/$2/status/$3" if $3;
 		    $username = $2 if !$username;
 		    $tweetid = $3 if !$tweetid;
 		    $time_string = $p->get_text("/a") if !$time_string;

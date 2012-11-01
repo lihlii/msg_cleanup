@@ -1,21 +1,29 @@
-Date: Sun, 14 Oct 2012 17:58:19 +0200
+Date: Thu, 01 Nov 2012 03:27:28 +0100
 From: lihlii <lihlii64@gmail.com>
 MIME-Version: 1.0
 Subject: Twitter =?UTF-8?B?5o6o5paH572R6aG15a2Y5qGj6Ieq5Yqo566A5YyW6L2s5o2i?=
- =?UTF-8?B?IDEyMTAxNA==?=
+ =?UTF-8?B?IDEyMTEwMQ==?=
 Content-Type: text/html; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
 <html>
   <head>
-    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
+
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
   </head>
   <body bgcolor="#FFFFFF" text="#000000">
     Twitter 推文网页存档自动简化转换<br>
-    v121014<br>
+    v121101<br>
     <br>
     修订：<br>
-    1. 增加功能，输出结果包括推文内嵌的图片。<br>
+    <ol>
+      <li>不依赖于 cygwin sort.exe ，只要安装 ActiveState Perl 即可。<br>
+      </li>
+      <li>对 mobile twitter 网页支持。</li>
+      <li>其他许多错误修正。具体请看 
+        <a class="moz-txt-link-freetext" href="https://github.com/lihlii/msg_cleanup/commits/master">https://github.com/lihlii/msg_cleanup/commits/master</a> 。 <br>
+      </li>
+    </ol>
     <br>
     用法:<br>
     <ol>
@@ -25,35 +33,36 @@ Content-Transfer-Encoding: 8bit
       <li>将本文件包内容展开到一个文件夹中。下载文件包： <a
 href="https://www.wuala.com/lihlii_%E7%AB%A5%E8%A8%80%E6%97%A0%E5%BF%8C/Topic/%E8%BD%AF%E4%BB%B6/Twitter/cleanup/">https://www.wuala.com
 
+
           /lihlii_童言无忌/Topic/软件/Twitter/cleanup/</a></li>
       <li>将需要保存的推文保存为完整网页（Complete HTML）格式，不要保存为仅存网页（HTML
         Only）格式，那样网页中信息可能不全。</li>
       <li>将保存的推文 HTML 文件拷贝到如上 2. 所述文件夹中。</li>
-      <li>运行 msg_merge_sort_twitter.bat，该脚本程序可以处理多个 HTML
-        文件并将其中推文按照时间排序，删除重复推文，输出结果 msg_merge_twitter.txt 是一个以 TAB
-        字符分隔的已经排序过的推文列表，可以导入 Excel/LibreOffice Calc 软件进行处理。</li>
-      <li>运行 tsv2html.bat 会自动将 msg_merge_twitter.txt 文件转换为简化的 HTML
-        文件适合作为存档。</li>
-      <li>也可以直接运行 msg_merge_sort_twitter_htm.bat，则自动调用第 5. 6.
-        步所述脚本程序，在浏览器中打开生成的 tsv2htm.htm 文件，如果有内嵌图片，则最好再以完整网页格式保存一次，这样可以确保
-        将内嵌图片也保存到本地存档。<br>
+      <li>运行 merge_sort.bat，该脚本程序可以处理多个 HTML 文件并将其中推文按照时间排序，删除重复推文，输出结果
+        merge_sort.tsv 是一个以 TAB 字符分隔的已经排序过的推文列表，可以导入 Excel/LibreOffice
+        Calc 软件进行处理。</li>
+      <li>运行 tsv2html.bat 会自动将 merge_sort.tsv 文件转换为简化的 HTML 文件适合作为存档。</li>
+      <li>也可以直接运行 merge_sort_htm.bat，则自动调用第 5. 6. 步所述脚本程序，在浏览器中打开生成的
+        merge_sort.htm 文件，如果有内嵌图片，则最好再以完整网页格式保存一次，这样可以确保 将内嵌图片也保存到本地存档。<br>
       </li>
       <li>拷倍网页内容后可粘贴到邮件编辑器（如 Thunderbird）或博客编辑器中发布。发布的推文格式如 <a
           href="http://lihlii.blogspot.nl/2012/10/alison-klayman-never-sorry.html">http://lihlii.blogspot.nl/2012/10/alison-klayman-never-sorry.html</a>
         所示。</li>
-      <li>最新版本发布在 <a class="moz-txt-link-freetext" href="https://github.com/lihlii/msg_cleanup">https://github.com/lihlii/msg_cleanup</a> 。<br>
+      <li>最新版本发布在 <a class="moz-txt-link-freetext"
+          href="https://github.com/lihlii/msg_cleanup">https://github.com/lihlii/msg_cleanup</a>
+        。<br>
       </li>
       <li>有任何问题或修改建议，请联系 <a href="mailto:lihlii64@gmail.com">lihlii64@gmail.com</a>
         或 <a href="https://twitter.com/lihlii">https://twitter.com/lihlii</a>
         。</li>
     </ol>
     <br>
-    <hr size="2" width="100%">喜欢这篇文章吗？欢迎发空信给 <a
+    <hr width="100%" size="2">喜欢这篇文章吗？欢迎发空信给 <a
       class="moz-txt-link-abbreviated"
       href="mailto:lihlii+subscribe@googlegroups.com">lihlii+subscribe@googlegroups.com</a>
     订阅《童言无忌》邮件组 发空信给 <a class="moz-txt-link-abbreviated"
       href="mailto:jrzl+subscribe@googlegroups.com">jrzl+subscribe@googlegroups.com</a>
     订阅《今日知录邮件组》。<br>
-    <hr size="2" width="100%">
+    <hr width="100%" size="2">
   </body>
 </html>
