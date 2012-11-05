@@ -59,15 +59,16 @@ my $url = "";
 my $tweetid = "";
 my $time = "";
 my $time_string = "";
+my $in_convers = 0;
 
 sub print_tweet {
     if ($text_line) {
 	if ($html_mode) {
-	    $text_line = "$fullname \@$username <a href=\"$url\">$time_string</a><br />\n$text_line<br />\n<br />\n";
+	    $text_line = "$fullname \@$username <a href=\"$url\">$time_string" . ($in_convers ? " 对话" : ""). "</a><br />\n$text_line<br />\n<br />\n";
 	} elsif ($tsv_mode) {
-	    $text_line = "$tweetid\t$url\t$time_string\t\@$username\t$fullname\t$text_line\n";
+	    $text_line = "$tweetid\t$url\t$time_string\t" . ($in_convers ? "C" : ""). "\t\@$username\t$fullname\t$text_line\n";
 	} else {
-	    $text_line = "$fullname \@$username $time_string $url\n$text_line\n\n";
+	    $text_line = "$fullname \@$username $time_string" . ($in_convers ? " 对话 " : " "). "$url\n$text_line\n\n";
 	}
 	print $text_line;
 	$text_line = "";
@@ -78,6 +79,7 @@ sub print_tweet {
 	$tweetid = "";
 	$time = "";
 	$time_string = "";
+	$in_convers = 0;
     }
 }
 
@@ -204,8 +206,14 @@ while (my $token = $p->get_token) {
 	}
     }
 
-    # Handle non-mobile page.  Search for "div" tag.
+##### Handle non-mobile page.  Search for "div" tag.
     next if $token->[0] ne "S"; # Find start tag.
+
+    if ($token->[1] eq "i") {
+	my $class = $token->[2]{"class"}; 
+	$in_convers = 1 if $class eq "sm-chat";
+    }
+
     next if ($token->[1] ne "div");
 
     my $has_photo_card = 0;
@@ -219,9 +227,7 @@ while (my $token = $p->get_token) {
     if ($class =~ /proxy-tweet-container/) {
         $p->get_tag("div"); # skip duplicate entry without photo.
 	next;
-    }
-
-    if ($class eq "media-instance-container") { # media card, photo embedded.
+    } elsif ($class eq "media-instance-container") { # media card, photo embedded.
 	$token = $p->get_token;
 	$token = $p->get_token;
 	$token = $p->get_token;

@@ -7,6 +7,7 @@
 #    exit;
 #}
 
+use utf8;
 binmode(STDIN, ":utf8");
 binmode(STDOUT, ":utf8");
 
@@ -21,8 +22,8 @@ EOF
 print $head;
 
 while (<STDIN>) {
-    ($sn, $url, $time, $username, $fullname, $text) = split/\t/;
-    print "$fullname $username <a href=\"$url\">$time</a><br />\n$text<br />\n<br />\n";
+    ($tweetid, $url, $time, $convers, $username, $fullname, $text) = split/\t/;
+    print "$fullname $username <a href=\"$url\">$time". ($convers eq "C" ? " 对话" : ""). "</a><br />\n$text<br />\n<br />\n";
 }
 
 print "</body>\n</html>\n";
