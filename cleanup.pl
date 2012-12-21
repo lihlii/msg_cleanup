@@ -27,12 +27,12 @@ my %opts;
 binmode(STDOUT, ":utf8");
 getopt('', \%opts);
 
-if ($opts{'?'} == 1) {
+if ($opts{'?'} && $opts{'?'} == 1) {
     print "Usage: $0 [-h|-t] [-m] <input html file> > <output file>\n-h: Output HTML format, otherwise text format.\n-t: Output Tab seperated value format with HTML data fields for further processing like sorting.\n-m: input file is mobile.twitter.com page.\n";
     exit;
 }
 
-if ($opts{'h'} == 1) {
+if ($opts{'h'} && $opts{'h'} == 1) {
     $html_mode = 1;
 } elsif ($opts{'t'} == 1) {
     $tsv_mode = 1;
@@ -103,7 +103,7 @@ while (my $token = $p->get_token) {
 		next;
 	    } elsif ($class eq "username") { # winhttrack downloaded pages have this.
 		$username = $p->get_trimmed_text("/div") if !$username;
-		$username =~ s/@(.*)/\1/;
+		$username =~ s/@(.*)/$1/;
 		next;
 	    } elsif ($class =~ /tweet-text/) {
 		while (my $token = $p->get_token) {
@@ -224,42 +224,44 @@ while (my $token = $p->get_token) {
 # <div class="tweet permalink-tweet js-actionable-user js-hover js-actionable-tweet opened-tweet" data-associated-tweet-id="252421276851920899" data-tweet-id="252421276851920899" data-item-id="252421276851920899" data-screen-name="lihlii" data-name="lihlii" data-user-id="16526760" data-is-reply-to="false" data-mentions="yujie89 awfan">
 
     my $class = $token->[2]{"class"}; 
-    if ($class =~ /proxy-tweet-container/) {
-        $p->get_tag("div"); # skip duplicate entry without photo.
-	next;
-    } elsif ($class eq "media-instance-container") { # media card, photo embedded.
-	$token = $p->get_token;
-	$token = $p->get_token;
-	$token = $p->get_token;
+    if ($class) {
+	if ($class =~ /proxy-tweet-container/) {
+	    $p->get_tag("div"); # skip duplicate entry without photo.
+	    next;
+	} elsif ($class eq "media-instance-container") { # media card, photo embedded.
+	    $token = $p->get_token;
+	    $token = $p->get_token;
+	    $token = $p->get_token;
 
-	next if $token->[0] ne "S" || $token->[1] ne "iframe";
-	my $iframe = $token->[2]{"src"};
-        $iframe = uri_unescape($iframe);
-	my $iframe_path = $iframe;
-	$iframe_path =~ s|[^/]+$||;
-	my $fn = decode(utf8 => $iframe);
-	my $fn = encode(locale_fs => $fn); # Translate utf8 string to locale language filesystem file name.
+	    next if $token->[0] ne "S" || $token->[1] ne "iframe";
+	    my $iframe = $token->[2]{"src"};
+	    $iframe = uri_unescape($iframe);
+	    my $iframe_path = $iframe;
+	    $iframe_path =~ s|[^/]+$||;
+	    my $fn = decode(utf8 => $iframe);
+	    $fn = encode(locale_fs => $fn); # Translate utf8 string to locale language filesystem file name.
 
-# FIXME: WinXP can save files with unicode characters, but Perl can only handle single charset filenames like cp936.  So unicode chars in filename outside of current code page will be translated to "?" and won't match with the filename on filesystem.
+    # FIXME: WinXP can save files with unicode characters, but Perl can only handle single charset filenames like cp936.  So unicode chars in filename outside of current code page will be translated to "?" and won't match with the filename on filesystem.
 
-	my $c = HTML::TokeParser->new($fn);
-	next if !$c;
+	    my $c = HTML::TokeParser->new($fn);
+	    next if !$c;
 
-	while ($t = $c->get_tag("div")) {
-	    $class = $t->[1]{"class"}; 
-	    last if $class eq "tweet-media";
-	}
-	$t = $c->get_tag("img");
-	$img = $iframe_path . $t->[1]{"src"} if $t;
+	    while ($t = $c->get_tag("div")) {
+		$class = $t->[1]{"class"}; 
+		last if $class eq "tweet-media";
+	    }
+	    $t = $c->get_tag("img");
+	    $img = $iframe_path . $t->[1]{"src"} if $t;
 
-	if ($img) {
-            $img = uri_escape($img, "#");
-	    if ($html_mode) {
-		$text_line .= "<br /><img src=\"$img\">";
-	    } elsif ($tsv_mode) {
-		$text_line .= "<br /><img src=\"$img\">";
-	    } else {
-		$text_line .= "IMG=$img";
+	    if ($img) {
+		$img = uri_escape($img, "#");
+		if ($html_mode) {
+		    $text_line .= "<br /><img src=\"$img\">";
+		} elsif ($tsv_mode) {
+		    $text_line .= "<br /><img src=\"$img\">";
+		} else {
+		    $text_line .= "IMG=$img";
+		}
 	    }
 	}
     }
@@ -277,7 +279,7 @@ while (my $token = $p->get_token) {
     $fullname =~ s/\s+$//; # trim ending blank chars including \n
     next if !$fullname;
     my $cardtype = $token->[2]{"data-card-type"}; 
-    $has_photo_card = 1 if $cardtype eq "photo";
+    $has_photo_card = 1 if $cardtype && $cardtype eq "photo";
     my $footer = $token->[2]{"data-expanded-footer"}; # The photo URL in collapsed card footer.
     if ($footer) {
     	$is_opened = 1 if $class =~ /opened-tweet/;
