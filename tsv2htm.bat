@@ -1,2 +1,2 @@
 @echo off
-perl tsv2htm.pl < merge_sort.tsv > merge_sort.htm 2>> TSV2HTM.ERR
+for %%F in (*.tsv) do (perl tsv2htm.pl <"%%F" >"%%F.htm" 2>> TSV2HTM.ERR)

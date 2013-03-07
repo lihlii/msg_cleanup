@@ -211,7 +211,7 @@ while (my $token = $p->get_token) {
 
     if ($token->[1] eq "i") {
 	my $class = $token->[2]{"class"}; 
-	$in_convers = 1 if $class eq "sm-chat";
+	$in_convers = 1 if $class && $class eq "sm-chat";
     }
 
     next if ($token->[1] ne "div");

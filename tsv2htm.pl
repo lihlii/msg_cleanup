@@ -8,6 +8,7 @@
 #}
 
 use utf8;
+# use Data::Dump;
 binmode(STDIN, ":utf8");
 binmode(STDOUT, ":utf8");
 
@@ -23,6 +24,7 @@ print $head;
 
 while (<STDIN>) {
     ($tweetid, $url, $time, $convers, $username, $fullname, $text) = split/\t/;
+    $tweetid = $tweetid; # disable warning.
     print "$fullname $username <a href=\"$url\">$time". ($convers eq "C" ? " 对话" : ""). "</a><br />\n$text<br />\n<br />\n";
 }
 
