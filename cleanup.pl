@@ -70,6 +70,8 @@ sub print_tweet {
 	} else {
 	    $text_line = "$fullname \@$username $time_string" . ($in_convers ? " 对话 " : " "). "$url\n$text_line\n\n";
 	}
+#	$text_line =~ s,</?b>,,ig; # remove <b> </b> tags.
+#	$text_line =~ s,</?p>,,ig; # remove <p> </p> tags.
 	print $text_line;
 	$text_line = "";
 	$img ="";
@@ -114,7 +116,7 @@ while (my $token = $p->get_token) {
 			last;
 		    } elsif ($token->[0] eq "T") {
 			my $text = $token->[1];
-			decode_entities($text);
+#			decode_entities($text);
 			$text_line .= $text;
 		    } elsif ($token->[0] eq "S" && $token->[1] eq "a" && ($token->[2]{"class"} eq "twitter_external_link" || $token->[2]{"class"} =~ /twitter-timeline-link/)) {
 			my $link = $token->[2]{"href"};
@@ -313,7 +315,7 @@ while (my $token = $p->get_token) {
 	    last;
 	} elsif ($token->[0] eq "T") {
 	    my $text = $token->[1];
-	    decode_entities($text);
+#	    decode_entities($text);
 	    $text_line .= $text;
 	} elsif ($token->[0] eq "S" && $token->[1] eq "a" && $token->[2]{class} eq "twitter-timeline-link") {
 	    my $link = $token->[2]{"href"};
