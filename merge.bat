@@ -1,2 +1,3 @@
 @echo off
-for %%F in (*.htm*) do (cleanup.pl -t "%%F" 2>> CLEANUP.ERR)
+type *.htm* > all.htm
+cleanup.pl -t all.htm 2>> CLEANUP.ERR

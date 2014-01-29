@@ -331,19 +331,23 @@ while (my $token = $p->get_token) {
 	if ($footer) {
 	    decode_entities($footer);
 	    my $c = HTML::TokeParser->new(\$footer);
-	    while ($token = $c->get_tag("div")) {
+	    while ($token = $c->get_tag("a")) {
 		$class = $token->[1]{"class"}; 
-		last if $class eq "media";
+		if (! defined $class) {
+		    print STDERR "$tweetid: a without class. ";
+		}
+		last if $class =~ /^media/;
 	    }
-	    $token = $c->get_tag("img");
-	    $img = $token->[1]{"src"};
+	    $img = $token->[1]{"data-resolved-url-large"};
 	} else {
-	    while ($token = $p->get_tag("div")) {
+	    while ($token = $p->get_tag("a")) {
 		$class = $token->[1]{"class"};
-		last if $class eq "media";
+		if (! defined $class) {
+		    print STDERR "$tweetid: a without class. ";
+		}
+		last if $class =~ /^media/;
 	    }
-	    $token = $p->get_tag("img");
-	    $img = $token->[1]{"src"};
+	    $img = $token->[1]{"data-resolved-url-large"};
 	}
 
 	if ($img) {
