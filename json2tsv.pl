@@ -20,18 +20,24 @@ $data = decode_json $json_text;
 # dd $data;
 
 for ($i = 0; $i <= $#{$data}; $i ++) {
-    $tweetid = $data->[$i]{id};
-    $fullname = $data->[$i]{user}{name};
-    $username = $data->[$i]{user}{screen_name};
-    $time = $data->[$i]{created_at};
-    $text = $data->[$i]{text};
+    if ($data->[$i]{retweeted_status}) {
+	%entry = %{$data->[$i]{retweeted_status}};
+    } else {
+	%entry = %{$data->[$i]};
+    }
+    $tweetid = $entry{id};
+    $fullname = $entry{user}{name};
+    $fullname =~ s/[\n\r\t]//g;
+    $username = $entry{user}{screen_name};
+    $time = $entry{created_at};
+    $text = $entry{text};
     $text =~ s/[\n\r\t]//g;
-    decode_entities($text);
+#    decode_entities($text); # in case some html tags appear in text.
     $convers = "";
-    $convers = "C" if $data->[$i]{in_reply_to_status_id};
+    $convers = "C" if $entry{in_reply_to_status_id};
     $t_url = "https://twitter.com/$username/status/$tweetid";
-    if ($data->[$i]{entities}{media}) {
-        @media = @{$data->[$i]{entities}{media}};
+    if ($entry{entities}{media}) {
+        @media = @{$entry{entities}{media}};
 	for ($j = 0; $j <= $#media; $j ++) {
 	    $m_url = $media[$j]{url};
 	    $m_d_url = $media[$j]{display_url};
@@ -40,8 +46,8 @@ for ($i = 0; $i <= $#{$data}; $i ++) {
 	    $text .= "<br /><img src=\"$m_img_url\">";
 	}
     }
-    if ($data->[$i]{entities}{urls}) {
-        @urls = @{$data->[$i]{entities}{urls}};
+    if ($entry{entities}{urls}) {
+        @urls = @{$entry{entities}{urls}};
 	for ($j = 0; $j <= $#urls; $j ++) {
 	    $s_url = $urls[$j]{url};
 	    $l_url = $urls[$j]{expanded_url};

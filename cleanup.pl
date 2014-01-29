@@ -63,6 +63,9 @@ my $in_convers = 0;
 
 sub print_tweet {
     if ($text_line) {
+	$text_line =~ s/^\s+//; # trim beginning blank chars including \n
+	$text_line =~ s/\s+$//; # trim ending blank chars including \n
+	$text_line =~ y/\n\r/ /; # remove in-between nl/cr chars.
 	if ($html_mode) {
 	    $text_line = "$fullname \@$username <a href=\"$url\">$time_string" . ($in_convers ? " 对话" : ""). "</a><br />\n$text_line<br />\n<br />\n";
 	} elsif ($tsv_mode) {
@@ -110,9 +113,6 @@ while (my $token = $p->get_token) {
 	    } elsif ($class =~ /tweet-text/) {
 		while (my $token = $p->get_token) {
 		    if ($token->[0] eq "E" && $token->[1] eq "div") { # end of tweet text.
-			$text_line =~ s/^\s+//; # trim beginning blank chars including \n
-			$text_line =~ s/\s+$//; # trim ending blank chars including \n
-			$text_line =~ y/\n/ /; # remove in-between newline chars.
 			last;
 		    } elsif ($token->[0] eq "T") {
 			my $text = $token->[1];
@@ -309,9 +309,6 @@ while (my $token = $p->get_token) {
 #    $img_c = 0;
     while ($token = $p->get_token) {
 	if ($token->[0] eq "E" && $token->[1] eq "p") { # end of tweet text.
-	    $text_line =~ s/^\s+//; # trim beginning blank chars including \n
-	    $text_line =~ s/\s+$//; # trim ending blank chars including \n
-	    $text_line =~ y/\n/ /; # remove in-between newline chars.
 	    last;
 	} elsif ($token->[0] eq "T") {
 	    my $text = $token->[1];
