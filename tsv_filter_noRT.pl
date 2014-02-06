@@ -24,7 +24,11 @@ while (<STDIN>) {
 #    $ignore = $ignore; # disable warning.
     chomp $text;
     my $text_noRT = $text;
-    $text_noRT =~ s/^((RT[":]?|[>"“]|&gt;)\s*(@[A-Za-z0-9_]+:?\s*)+)+//g; # text line without RT prefixes for filtering duplicate RT messages later.
+    $text_noRT =~ s/‏//g; # ignore right-to-left marks
+    $text_noRT =~ s/^((RT[":]?|[>"“]|&gt;|&quot;)\s*(@[A-Za-z0-9_]+:?\s*)+)+//g; # text line without RT prefixes for filtering duplicate RT messages later.
+    $text_noRT =~ s,(["”]|&quot;)(<br />|$),$2,; # ignore ending quotes
+    $text_noRT =~ s|<a href="https?://t\.co/\S+">pic\.twitter\.com/\S+</a>(.*)<br /><img src="([^">]+):large">|$1$2|; # change pic.twitter.com t.co changing url to img src url.
+    $text_noRT =~ s|<a href="https?://t\.co/\S+">(https?://pbs\.twimg\.com/media/[^<]+)</a>|$1|; # change t.co changing url to img src url.
     $text_noRT =~ s/<[^>]+>//g; # ignore html tags and href urls
     $text_noRT =~ s/\s+//g; # ignore space
     print "$tweetid\t$url\t$time\t$convers\t$username\t$fullname\t$text\t$text_noRT\n";
