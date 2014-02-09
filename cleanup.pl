@@ -334,18 +334,20 @@ while (my $token = $p->get_token) {
 	    while ($token = $c->get_tag("a")) {
 		$class = $token->[1]{"class"}; 
 		if (! defined $class) {
-		    print STDERR "$tweetid: a without class. ";
+		    print STDERR "$tweetid: a without class. \n";
+		    next;
 		}
-		last if $class =~ /^media/;
+		last if $class =~ /media/;
 	    }
 	    $img = $token->[1]{"data-resolved-url-large"};
 	} else {
 	    while ($token = $p->get_tag("a")) {
 		$class = $token->[1]{"class"};
 		if (! defined $class) {
-		    print STDERR "$tweetid: a without class. ";
+		    print STDERR "$tweetid: a without class. \n";
+		    next;
 		}
-		last if $class =~ /^media/;
+		last if $class =~ /media/;
 	    }
 	    $img = $token->[1]{"data-resolved-url-large"};
 	}

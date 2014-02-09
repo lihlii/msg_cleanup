@@ -25,11 +25,15 @@ while (<>) {
 
 for (my $i = 0; $i < @tsvs; $i++) {
     $time_string = $tsvs[$i][2];
+    $text = $tsvs[$i][6];
     while ( ($i+1 < @tsvs) && $tsvs[$i+1][0] eq $tsvs[$i][0]) { # is next line with the same serial number at first field?
-	$time_string = $tsvs[$i+1][2] if length($time_string) < length($tsvs[$i+1][2]); # store the time string field if it's longer the current one.
+	$time_string = $tsvs[$i+1][2] if length($time_string) < length($tsvs[$i+1][2]); # store the time string field if it's longer than the current one.
+	$text = $tsvs[$i+1][6] if length($text) < length($tsvs[$i+1][6]); # store the text field if it's longer than the current one.
     } continue {
 	$i++;
     }
+    $tsvs[$i][2] = $time_string;
+    $tsvs[$i][6] = $text;
     print join("\t", @{$tsvs[$i]});
 }
 
