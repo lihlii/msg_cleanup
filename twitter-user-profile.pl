@@ -5,18 +5,19 @@ use JSON;
 use Data::Dump;
 use LWP::ConnCache; 
 use utf8;
+use Config::Tiny;
 
-binmode(STDIN, ":utf8");
-binmode(STDOUT, ":utf8");
-STDOUT->autoflush(1);
+my $Config = Config::Tiny->new;
+$Config = Config::Tiny->read('twitter-user-profile.ini');
 
-$user_string = 'DanHongTang';
+my $user_string = $Config->{_}->{user_string};
+my $tweet_id_begin = $Config->{_}->{tweet_id_begin}; # biggest id to start with.
+my $tweet_id_end = $Config->{_}->{tweet_id_end}; # if see id smaller than this on last page, then stop.
+
 $url_prefix_next = 'https://twitter.com/i/profiles/show/' . $user_string . '/timeline/with_replies?include_available_features=1&include_entities=1&max_id=';
 
 $url_prefix_new = 'https://twitter.com/i/profiles/show/' . $user_string . '/timeline/with_replies?composed_count=0&include_available_features=1&include_entities=1&include_new_items_bar=true&interval=60000&latent_count=0&since_id=';
 
-$tweet_id_begin = '397351423509139456'; # biggest id to start with.
-$tweet_id_end   = '0'; # if see id smaller than this on last page, then stop.
 $tweet_id_max = $tweet_id_begin;
 $max_id = "$tweet_id_max";
 $url_prefix = $url_prefix_next;
@@ -24,6 +25,11 @@ $url = "$url_prefix$max_id";
 $has_more = 1;
 $retry_max = 10;
 $sleep_seconds = 1;
+
+binmode(STDIN, ":utf8");
+binmode(STDOUT, ":utf8");
+STDOUT->autoflush(1);
+
 
 my $ua = LWP::UserAgent->new;
 $ua->conn_cache(LWP::ConnCache->new()); # keep alive.
